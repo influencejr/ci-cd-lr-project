@@ -80,7 +80,7 @@ export default defineConfig([
 
 
 
-## Latest Release Info
-- Version: v1.0.7
-- PR Title: Manual push to main
-- Chuck Norris Joke: A mere slap in your face from Chuck Norris causes permanent, life long strabismus.
+## Інформацію про останню версію
+- Версія: v1.0.7
+- Назва PR: Manual push to main
+- Жарт: A mere slap in your face from Chuck Norris causes permanent, life long strabismus.
