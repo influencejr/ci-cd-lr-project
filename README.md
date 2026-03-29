@@ -82,5 +82,5 @@ export default defineConfig([
 
 ## Інформація про останню версію
 - Версія: v1.0.7
-- Назва PR: Manual push to main
+- Назва: Manual push to main
 - Жарт: A mere slap in your face from Chuck Norris causes permanent, life long strabismus.
