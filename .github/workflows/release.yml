@@ -1,30 +1,91 @@
-- name: Release
-  run: |
-    python3 - <<'PYEOF'
-    import re, os
+name: Release
 
-    joke = os.environ['JOKE']
-    version = os.environ['VERSION']
-    pr_title = os.environ['PR_TITLE']
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
 
-    new_block = "## Latest Release Info\n"
-    new_block += "- Версія:: " + version + "\n"
-    new_block += "- Назва PR: " + pr_title + "\n"
-    new_block += "- Жарт: " + joke
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
-    with open('README.md', 'r') as f:
-        content = f.read()
+    steps:
+      - uses: actions/checkout@v4
 
-    pattern = r'## Latest Release Info.*'
-    if re.search(pattern, content, re.DOTALL):
-        content = re.sub(pattern, new_block, content, flags=re.DOTALL)
-    else:
-        content += '\n\n' + new_block
+      - name: Get joke
+        id: joke
+        run: |
+          JOKE=$(curl -s https://api.chucknorris.io/jokes/random | jq -r '.value')
+          echo "text=$JOKE" >> $GITHUB_OUTPUT
 
-    with open('README.md', 'w') as f:
-        f.write(content)
-    PYEOF
-  env:
-    JOKE: ${{ steps.joke.outputs.text }}
-    VERSION: ${{ steps.version.outputs.tag }}
-    PR_TITLE: ${{ github.event.pull_request.title }}
+      - name: Set version
+        id: version
+        run: echo "tag=v1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update README
+        run: |
+          python3 - <<'PYEOF'
+          import re, os
+
+          joke = os.environ['JOKE']
+          version = os.environ['VERSION']
+          pr_title = os.environ['PR_TITLE']
+
+          new_block = "## Інформація про останню версію\n"
+          new_block += "- Версія: " + version + "\n"
+          new_block += "- Назва PR: " + pr_title + "\n"
+          new_block += "- Жарт: " + joke
+
+          with open('README.md', 'r') as f:
+              content = f.read()
+
+          pattern = r'## Latest Release Info.*'
+          if re.search(pattern, content, re.DOTALL):
+              content = re.sub(pattern, new_block, content, flags=re.DOTALL)
+          else:
+              content += '\n\n' + new_block
+
+          with open('README.md', 'w') as f:
+              f.write(content)
+          PYEOF
+        env:
+          JOKE: ${{ steps.joke.outputs.text }}
+          VERSION: ${{ steps.version.outputs.tag }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+
+      - name: Commit README
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add README.md
+          git commit -m "Update README for ${{ steps.version.outputs.tag }}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: |
+            **PR:** ${{ github.event.pull_request.title }}
+            **Жарт:** ${{ steps.joke.outputs.text }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
