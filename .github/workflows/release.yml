@@ -52,7 +52,7 @@ jobs:
           with open('README.md', 'r') as f:
               content = f.read()
 
-          pattern = r'## Latest Release Info.*'
+          pattern = r'## Інформація про останню версію.*'
           if re.search(pattern, content, re.DOTALL):
               content = re.sub(pattern, new_block, content, flags=re.DOTALL)
           else:
